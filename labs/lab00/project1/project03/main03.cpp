@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include <iostream>
+#include <climits>
 
+const unsigned int secondMax = UINT_MAX;
 using namespace std;
-void CalculateFibbonaci(int a, int b, long n, int count);
-
+void CalculateFibbonaci(unsigned int firstNum, unsigned int secondNum, unsigned long limitFibbonaci, int numbersInLine);
 
 int main(int argc, char *argv[])
 {
@@ -11,34 +12,37 @@ int main(int argc, char *argv[])
 		cout << "Not enough arguments" << endl;
 	else
 	{
-		long n = atoi(argv[1]);
-		if (n > 0)
+		unsigned long long limitFibbonaci = atoll(argv[1]);
+
+		if (limitFibbonaci > 0 && limitFibbonaci <= UINT_MAX)
 		{
-			int a = 0, b = 1, c = 0, count = 0;
-			cout << a << ", " << b << ", ";
-			count = 2;
-			CalculateFibbonaci(a, b, n, count);
+			unsigned int firstNum = 0, secondNum = 1, c = 0, numbersInLine = 0;
+			cout << firstNum << ", " << secondNum << ", ";
+			numbersInLine = 2;
+			CalculateFibbonaci(firstNum, secondNum, limitFibbonaci, numbersInLine);
 		}
 		else
 			cout << "Incorrect N" << endl;
 	}
+	cout << endl;
 	system("pause");
     return 0;
 }
 
-void CalculateFibbonaci(int a, int b, long n, int count)
+void CalculateFibbonaci(unsigned int firstNum, unsigned int secondNum, unsigned long limitFibbonaci, int numbersInLine)
 {
-	long c = a + b;
+	unsigned long long c = firstNum + secondNum;
 
-	if (c <= n)
+	if (c <= limitFibbonaci)
 	{
-		count++;
-		cout << (c) << ", ";
-		if (count == 5)
+		numbersInLine++;
+		cout << (c)<< ", ";
+		if (numbersInLine == 5)
 		{
 			cout << endl;
-			count = 0;
+			numbersInLine = 0;
 		}
-		CalculateFibbonaci(b, c, n, count);
+		if (c + secondNum < secondMax)
+			CalculateFibbonaci(secondNum, c, limitFibbonaci, numbersInLine);
 	}
 }
