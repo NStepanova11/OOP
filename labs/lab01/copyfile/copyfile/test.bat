@@ -30,6 +30,20 @@ if ERRORLEVEL 1 goto testFailed
 copyfile.exe input.txt non_existing.txt
 if ERRORLEVEL 1 goto testFailed
 
+echo Test5: >> testResult.txt
+echo %program% non_input.txt non_existing.txt>>testResult.txt
+%program% non_input.txt non_existing.txt>>testResult.txt
+if ERRORLEVEL 1 goto testFailed
+copyfile.exe non_input.txt non_existing.txt
+if ERRORLEVEL 1 goto testFailed
+
+echo Test6: >> testResult.txt
+echo %program% empty.txt output.txt>>testResult.txt
+%program% empty.txt output.txt>>testResult.txt
+if ERRORLEVEL 1 goto testFailed
+copyfile.exe empty.txt output.txt
+if ERRORLEVEL 1 goto testFailed
+
 echo OK
 exit /B
 

@@ -5,48 +5,75 @@
 
 const size_t REQUIRED_ARGC = 3;
 
-enum errorCode { argcError, fileOpenError };
+enum errorCode { argcError, fileOpenError, emptyError };
 
 using namespace std;
 
 void ErrorMessage(int errorCode, string fileName);
-int CopyLines(string inputFileName, string outputFileName);
+void CopyLines(string inputFileName, string outputFileName, int &code);
 
 int main(int argc, char *argv[])
 {
+	int code = 0;
 	if (argc != REQUIRED_ARGC)
 	{
 		ErrorMessage(argcError, "");
+		code = 1;
 	}
 	else
 	{
-		string inputFileName = argv[1], outputFileName = argv[2];
-		CopyLines(inputFileName, outputFileName);
+		string inputFileName =argv[1], outputFileName = argv[2];
+		CopyLines(inputFileName, outputFileName, code);
 	}
-	return 0;
+	//system("pause");
+	return code;
 }
 
-int CopyLines(string inputFileName, string outputFileName)
+void CopyLines(string inputFileName, string outputFileName, int &code)
 {
 	ifstream inputFile(inputFileName);
-	ofstream outputFile(outputFileName, ios::out);
-	
+	ofstream outputFile(outputFileName);
+	bool inputFileOpened = true, outputFileOpened = true, fileHaveLines = true;
+
 	string fileLine = "";
-	if (inputFile.is_open() && outputFile.is_open())
+		
+	if (!inputFile.is_open())
 	{
-		while (getline(inputFile, fileLine))
+		inputFileOpened = false;
+		ErrorMessage(fileOpenError, inputFileName);
+		code = 1;
+	}
+
+	if (!outputFile.is_open())
+	{
+		outputFileOpened = false;
+		ErrorMessage(fileOpenError, outputFileName);
+		code = 1;
+	}
+
+	if (inputFileOpened && outputFileOpened)
+	{
+		int linesCount = 0;
+		while (fileHaveLines)
 		{
-			outputFile << fileLine << endl;
+			if (getline(inputFile, fileLine))
+			{
+				outputFile << fileLine << endl;
+				linesCount++;
+			}
+			else
+			{
+				fileHaveLines = false;
+			}
+		}
+		if (linesCount == 0)
+		{
+			ErrorMessage(emptyError, inputFileName);
+			code = 1;
 		}
 		inputFile.close();
 		outputFile.close();
 	}
-	else
-	{
-		ErrorMessage(fileOpenError, outputFileName);
-	}
-
-	return 0;
 }
 
 void ErrorMessage(int errorCode, string fileName)
@@ -60,7 +87,12 @@ void ErrorMessage(int errorCode, string fileName)
 		}
 		case fileOpenError:
 		{
-			cout << "File "<<fileName<<" can not be open." << endl;
+			cout << "File \""<< fileName <<"\" can not be open." << endl;
+			break;
+		}
+		case emptyError:
+		{
+			cout << "File \"" << fileName << "\" is empty." << endl;
 			break;
 		}
 	}
