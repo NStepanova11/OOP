@@ -1,66 +1,112 @@
 #include "stdafx.h"
 #include <iostream>
 #include <string>
-#include <climits>
 #include <vector>
 
 using namespace std;
 
-const size_t REQUIRED_ARGC = 2;
-const size_t MAX_NUMBER = pow(2, 32) - 1;
-const size_t MAX_NUMBER_SIZE = 32;
+const int REQUIRED_ARGC = 2;
+const int MAX_NUMBER_SIZE = 32;
+const unsigned long MAX_NUMBER_VALUE = pow(2, 32) - 1;
+const int NORMAL_END = 0;
 
-enum errorCode { argcError, limitError, numFormatError};
+enum errorCode { argcError, limitError, numFormatError };
 
 int ErrorMessage(int errorCode);
+int ParametersVerification(int paramQuantity);
+int NumberSizeVerification(int binNumberSize);
+int StringToIntConverting(int binNumberSize, string binNumberString, vector <int> &binNumber);
+unsigned long CalculateDecNumber(vector <int> binNumber);
 
 int main(int argc, char * argv[])
 {
 	int code = 0;
-	vector <int> binNumber;
-	
-	if (argc != REQUIRED_ARGC)
-	{
-		code = ErrorMessage(argcError);
-	}
-	else
-	{
-		string line = argv[1];
-		if (line.size() > MAX_NUMBER_SIZE)
-		{
-			code = ErrorMessage(limitError);
-		}
-		else
-		{
-			string num;
-			cout << line << endl;
-			for (int i = 0; i < line.size(); i++)
-			{
-				num = line[i];
-				if ((num == "1") || (num == "0"))
-				{
-					binNumber.push_back(atoi(num.c_str()));
-				}
-				else
-				{
-					code = ErrorMessage(numFormatError);
-					break;
-				}
-			}
+	//проверка количества параметров
+	code = ParametersVerification(argc);
 
-			int exponent = binNumber.size() - 1;
-			int decNumber = 0;
+	if (code == NORMAL_END)
+	{
+		string binNumberString = argv[1];
 
-			for (int i = 0; i < binNumber.size(); i++)
+		int binNumberSize = binNumberString.size();
+		//проверка на допустимую длину числа
+		code = NumberSizeVerification(binNumberSize);
+
+		if (code == NORMAL_END)
+		{
+			vector <int> binNumber;
+			//преобразование символов строки в int и проверка на 0 и 1
+			code = StringToIntConverting(binNumberSize, binNumberString, binNumber);
+
+			if (code == NORMAL_END)
 			{
-				decNumber += binNumber[i] * pow(2, exponent);
-				exponent--;
+				unsigned long decNumber = 0;
+				//перевод числа из двоичного вида в десятичный
+				decNumber = CalculateDecNumber(binNumber);
+				cout << decNumber << endl;
 			}
-			cout << decNumber << endl;
 		}
 	}
 	system("pause");
 	return code;
+}
+
+//проверка количества параметров
+int ParametersVerification(int paramQuantity)
+{
+	int errorCode = 0;
+	if (paramQuantity != REQUIRED_ARGC)
+	{
+		errorCode = ErrorMessage(argcError);
+	}
+	return errorCode;
+}
+
+//проверка на допустимую длину числа
+int NumberSizeVerification(int binNumberSize)
+{
+	int errorCode = 0;
+	if (binNumberSize > MAX_NUMBER_SIZE)
+	{
+		errorCode = ErrorMessage(limitError);
+	}
+	return errorCode;
+}
+
+//преобразование символов строки в int и проверка на 0 и 1
+int StringToIntConverting(int binNumberSize, string binNumberString, vector <int> &binNumber)
+{
+	int errorCode = 0;
+	string binDigit;
+
+	for (int i = 0; i < binNumberSize; i++)
+	{
+		binDigit = binNumberString[i];
+		if ((binDigit == "1") || (binDigit == "0"))
+		{
+			binNumber.push_back(stoi(binDigit));
+		}
+		else
+		{
+			errorCode = ErrorMessage(numFormatError);
+			break;
+		}
+	}
+	return errorCode;
+}
+
+//перевод числа из двоичного вида в десятичный
+unsigned long CalculateDecNumber(vector <int> binNumber)
+{
+	unsigned long decNum = 0;
+	int exponent = binNumber.size() - 1;
+
+	for (int i = 0; i < binNumber.size(); i++)
+	{
+		decNum += binNumber[i] * pow(2, exponent);
+		exponent--;
+	}
+	return decNum;
 }
 
 int ErrorMessage(int errorCode)
@@ -69,12 +115,12 @@ int ErrorMessage(int errorCode)
 	{
 		case argcError:
 		{
-			cout << "Not enough arguments. Usage: bin2dec.exe <dec number>." << endl;
+			cout << "Not enough arguments. Usage: bin2dec.exe <binary number>." << endl;
 			break;
 		}
 		case limitError:
 		{
-			cout << "The value is greater than "<< MAX_NUMBER_SIZE<< " or less than 0." << endl;
+			cout << "The entered value is greater than " << MAX_NUMBER_VALUE << endl;
 			break;
 		}
 		case numFormatError:
@@ -82,7 +128,6 @@ int ErrorMessage(int errorCode)
 			cout << "Error number, the binary number consists of 0 and 1" << endl;
 			break;
 		}
-
 	}
 	return 1;
 }
