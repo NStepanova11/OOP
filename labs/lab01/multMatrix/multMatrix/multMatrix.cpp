@@ -22,19 +22,24 @@ struct MyMatrix
 	double matrix2[ELEMENT_MAX_AMOUNT][ELEMENT_MAX_AMOUNT] = { 0 };
 };
 
-int ParametersVerification(const size_t &argc);
-int CheckingFiles(const string &matrixFileName1, const string &matrixFileName2, MyMatrix &mult);
+int CheckTheParameters(const size_t &argc);
+int CheckTheFiles(ifstream &firstFile, ifstream &secondFile, string  matrixFileName1, string matrixFileName2);
+int ReadTheMatrixes(ifstream &firstFile, ifstream &secondFile, string  matrixFileName1, string matrixFileName2, MyMatrix &mult);
 int ReadLineFromFile(const string &fileName, ifstream &matrixFile, const size_t &matrixNumber, MyMatrix &mult);
 int ConvertStringToArrayElements(string *fileLine, const int &matrixNumber, size_t &row, size_t &col, MyMatrix &mult);
+int ParseLine(char &digitSymbol, string line, string &numberSymbols);
+int GetMatrixElement(double &arrayElement, string numberSymbols, const int &matrixNumber, size_t &row, size_t &col, MyMatrix &mult);
 void CreateMatrix(double arrayElement, const int &matrixNumber, size_t &row, size_t &col, MyMatrix &mult);
-void MultMatrix(MyMatrix &mult);
+void MultiplyTheMatrixes(MyMatrix &mult, double multMatrix[3][3]);
 int ErrorMessage(int errCode, string errorSource);
+void PrintMultiplyMatrix(double multMatrix[3][3]);
+
 
 int main(size_t argc, char * argv[])
 {
 	int code = 0;
 	//проверка количества параметров
-	code = ParametersVerification(argc);
+	code = CheckTheParameters(argc);
 
 	if (code == NORMAL_END)
 	{
@@ -45,17 +50,26 @@ int main(size_t argc, char * argv[])
 		matrixFileName2 = argv[2];
 
 		int maxElementWidth = 0;
-		MyMatrix mult;
-		code = CheckingFiles(matrixFileName1, matrixFileName2, mult);
+		ifstream firstFile(matrixFileName1), secondFile(matrixFileName2);
+		code = CheckTheFiles(firstFile, secondFile, matrixFileName1, matrixFileName2);
 
 		if (code == NORMAL_END)
-			MultMatrix(mult);
+		{
+			MyMatrix mult;
+			code = ReadTheMatrixes(firstFile, secondFile, matrixFileName1, matrixFileName2, mult);
+			if (code == NORMAL_END)
+			{
+				double multMatrix[ELEMENT_MAX_AMOUNT][ELEMENT_MAX_AMOUNT] = { 0 };
+				MultiplyTheMatrixes(mult, multMatrix);
+				PrintMultiplyMatrix(multMatrix);
+			}
+		}
 	}
 	return code;
 }
 
 //проверка кол-ва входных параметров
-int ParametersVerification(const size_t &argc)
+int CheckTheParameters(const size_t &argc)
 {
 	int errCode = 0;
 	if (argc < REQUIRED_ARGC)
@@ -67,28 +81,30 @@ int ParametersVerification(const size_t &argc)
 }
 
 //проверка существования файлов ввода
-int CheckingFiles(const string &matrixFileName1, const string &matrixFileName2, MyMatrix &mult)
+int CheckTheFiles(ifstream &firstFile, ifstream &secondFile, string  matrixFileName1, string matrixFileName2)
 {
 	int errCode = 0;
-	ifstream firstFile(matrixFileName1), secondFile(matrixFileName2);
 
 	if (!firstFile.is_open())
 		errCode = ErrorMessage(fileOpenError, matrixFileName1);
 	else if (!secondFile.is_open())
 		errCode = ErrorMessage(fileOpenError, matrixFileName2);
 
-	if (errCode == NORMAL_END)
+	return errCode;
+}
+
+int ReadTheMatrixes(ifstream &firstFile, ifstream &secondFile, string  matrixFileName1, string matrixFileName2, MyMatrix &mult)
+{
+	int errCode = 0;
+	//если файлы существуют
+	for (size_t matrixNumber = 1; matrixNumber <= 2; matrixNumber++)
 	{
-		//если файлы существуют
-		for (size_t matrixNumber = 1; matrixNumber <= 2; matrixNumber++)
-		{
-			if (matrixNumber == 1)
-				errCode = ReadLineFromFile(matrixFileName1, firstFile, matrixNumber, mult);
-			else
-				errCode = ReadLineFromFile(matrixFileName2, secondFile, matrixNumber, mult);
-			if (errCode != NORMAL_END)
-				break;
-		}
+		if (matrixNumber == 1)
+			errCode = ReadLineFromFile(matrixFileName1, firstFile, matrixNumber, mult);
+		else
+			errCode = ReadLineFromFile(matrixFileName2, secondFile, matrixNumber, mult);
+		if (errCode != NORMAL_END)
+			break;
 	}
 	return errCode;
 }
@@ -140,22 +156,15 @@ int ConvertStringToArrayElements(string *fileLine, const int &matrixNumber, size
 	double arrayElement = 0.0;
 	size_t k = 0;
 
-	while (k < stringLength)
+	while ((k < stringLength) && (errCode==NORMAL_END))
 	{
 		while ((line[k] != ' ') && (k<stringLength))
 		{
-			if ((!isdigit((unsigned char)line[k])) && (line[k] != '-') && (line[k] != ',') && (line[k] != '.'))
-			{
-				errCode = ErrorMessage(numFormatError, line);
+			errCode = ParseLine(line[k], line, numberSymbols);
+			if (errCode==NORMAL_END)
+				k++;
+			else 
 				break;
-			}
-			else
-			{
-				if (line[k] == ',')
-					line[k] = '.';
-				numberSymbols += line[k];
-			}
-			k++;
 		}
 
 		if (errCode == NORMAL_END)
@@ -163,22 +172,47 @@ int ConvertStringToArrayElements(string *fileLine, const int &matrixNumber, size
 			if ((line[k] == ' ') || (k == stringLength))
 			{
 				k++;
-				stringstream numbersStream(numberSymbols);
-				numbersStream >> arrayElement;
-				if ((arrayElement <= MAX_ELEMENT_MEAN) && (arrayElement > MIN_ELEMENT_MEAN))
-				{
-					//добавление преобразованного элемента в матрицу
-					CreateMatrix(arrayElement, matrixNumber, row, col, mult);
-				}
-				else
-				{
-					errCode = ErrorMessage(limitError, numberSymbols);
-					break;
-				}
+				errCode = GetMatrixElement(arrayElement, numberSymbols, matrixNumber, row, col, mult);
 				numberSymbols.clear();
 			}
 		}
 		else break;
+	}
+	return errCode;
+}
+
+
+int ParseLine(char &digitSymbol, string line, string &numberSymbols)
+{
+	int errCode = 0;
+
+	if ((!isdigit((unsigned char) digitSymbol)) && (digitSymbol != '-') && (digitSymbol != ',') && (digitSymbol != '.'))
+	{
+		errCode = ErrorMessage(numFormatError, line);
+	}
+	else
+	{
+		if (digitSymbol == ',')
+			digitSymbol = '.';
+		numberSymbols += digitSymbol;
+	}
+
+	return errCode;
+}
+
+int GetMatrixElement(double &arrayElement, string numberSymbols, const int &matrixNumber, size_t &row, size_t &col, MyMatrix &mult)
+{
+	int errCode = 0;
+	stringstream numbersStream(numberSymbols);
+	numbersStream >> arrayElement;
+	if ((arrayElement <= MAX_ELEMENT_MEAN) && (arrayElement > MIN_ELEMENT_MEAN))
+	{
+		//добавление преобразованного элемента в матрицу
+		CreateMatrix(arrayElement, matrixNumber, row, col, mult);
+	}
+	else
+	{
+		errCode = ErrorMessage(limitError, numberSymbols);
 	}
 	return errCode;
 }
@@ -198,11 +232,8 @@ void CreateMatrix(double arrayElement, const int &matrixNumber, size_t &row, siz
 		col++;
 }
 
-void MultMatrix(MyMatrix &mult)
+void MultiplyTheMatrixes(MyMatrix &mult, double multMatrix[3][3])
 {
-	double multMatrix[ELEMENT_MAX_AMOUNT][ELEMENT_MAX_AMOUNT] = { 0 };
-	cout << "Multmatrix:" << endl;
-
 	for (size_t row = 0; row < ELEMENT_MAX_AMOUNT; row++)
 	{
 		for (size_t col = 0; col < ELEMENT_MAX_AMOUNT; col++)
@@ -211,6 +242,17 @@ void MultMatrix(MyMatrix &mult)
 			{
 				multMatrix[row][col] += mult.matrix1[row][k] * mult.matrix2[k][col];
 			}
+		}
+	}
+}
+
+void PrintMultiplyMatrix(double multMatrix[3][3])
+{
+	cout << "Multmatrix:" << endl;
+	for (int row = 0; row < ELEMENT_MAX_AMOUNT; row++)
+	{
+		for (int col = 0; col < ELEMENT_MAX_AMOUNT; col++)
+		{
 			cout.setf(ios::fixed);
 			cout.width(ELEMENT_WIDTH);
 			cout.precision(DECIMAL_PART_SIZE);
