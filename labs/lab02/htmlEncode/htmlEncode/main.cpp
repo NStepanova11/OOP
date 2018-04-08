@@ -15,7 +15,7 @@ const map entities = {{
 	{ "'", "&apos;" },
 }};
 
-void DecodeHtml(string &htmlString);
+void EncodeHtml(string &htmlString);
 void Replace(string &htmlString, string searchString, string replaceString);
 
 int main()
@@ -23,12 +23,12 @@ int main()
 	string htmlString;
 	while (getline(cin, htmlString) && (htmlString!=""))
 	{
-		DecodeHtml(htmlString);
+		EncodeHtml(htmlString);
 	}
     return 0;
 }
 
-void DecodeHtml(string &htmlString)
+void EncodeHtml(string &htmlString)
 {
 	for (auto element: entities)
 	{
